@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/gocolly/colly/v2/debug"
@@ -16,30 +15,30 @@ import (
 
 // CrawlerParams : Specify behavior for Collector object
 type CrawlerParams struct {
-	Threads, Throttle, RandomDelay, Depth int
-	Agent                                 string
-	DomainGlob                            string
-	Before                                func(*colly.Request)
-	Success                               func(*colly.Response)
-	Failed                                func(error, *colly.Response)
-	Done                                  func(*colly.Response)
-	Proxies                               []*url.URL
+	Depth   int
+	Agent   string
+	Before  func(*colly.Request)
+	Success func(*colly.Response)
+	Failed  func(error, *colly.Response)
+	Done    func(*colly.Response)
+	Proxies []*url.URL
 }
 
+type LimitRule = colly.LimitRule
+
 // Crawler : creates a Collector with specified parameters
-func Crawler(args CrawlerParams) *colly.Collector {
+func Crawler(args CrawlerParams, limits ...LimitRule) *colly.Collector {
 	c := colly.NewCollector(
 		colly.Async(true),
 		colly.MaxDepth(args.Depth),
 		colly.Debugger(&debug.LogDebugger{}),
 	)
 
-	c.Limit(&colly.LimitRule{
-		DomainGlob:  args.DomainGlob,
-		Parallelism: args.Threads,
-		Delay:       time.Duration(args.Throttle) * time.Second,
-		RandomDelay: time.Duration(args.RandomDelay) * time.Second,
-	})
+	if limits != nil {
+		for _, rule := range limits {
+			c.Limit(&rule)
+		}
+	}
 
 	if args.Agent != "" {
 		c.UserAgent = args.Agent

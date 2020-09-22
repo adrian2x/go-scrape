@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/pkg/errors"
@@ -26,10 +27,7 @@ func main() {
 
 	// Create the crawler with config
 	client := Crawler(CrawlerParams{
-		Threads:    1,
-		Depth:      1,
-		Throttle:   5,
-		DomainGlob: "",
+		Depth: 1,
 		Success: func(res *colly.Response) {
 			// Headers
 			contentType := res.Headers.Get("Content-Type")
@@ -42,6 +40,11 @@ func main() {
 				Trace(err)
 			}
 		},
+	}, LimitRule{
+		Parallelism: 1,
+		DomainGlob:  "",
+		Delay:       time.Duration(1) * time.Second,
+		RandomDelay: time.Duration(5) * time.Second,
 	})
 
 	// Visit urls
